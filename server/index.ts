@@ -1,10 +1,11 @@
+import { getApps, initializeApp } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { GoogleGenAI, Type } from '@google/genai';
 import rateLimit from 'express-rate-limit';
-import admin from 'firebase-admin';
 
 import { UserModel } from './models/User';
 import { ProductModel } from './models/Product';
@@ -36,16 +37,16 @@ const MONGO_URI = process.env.MONGO_URI || '';
 // ============================================
 // FIREBASE ADMIN
 // ============================================
-if (!admin.apps.length) {
+if (!getApps().length) {
     // Basic init since we are just decoding tokens. In production provide Google Application Credentials
-    admin.initializeApp();
+    initializeApp();
 }
 
 const authMiddleware = async (req: any, res: any, next: any) => {
     const token = req.headers.authorization?.split('Bearer ')[1];
     if (!token) return res.status(401).json({ error: 'Unauthorized: No token provided' });
     try {
-        const decodedToken = await admin.auth().verifyIdToken(token);
+        const decodedToken = await getAuth().verifyIdToken(token);
         // Find user in DB to get their role
         const user = await UserModel.findOne({ firebaseUid: decodedToken.uid });
         if (!user) return res.status(401).json({ error: 'User profile not found' });
